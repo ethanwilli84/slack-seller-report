@@ -32,4 +32,5 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REPORT_CHANNEL_ID: ${{ secrets.REPORT_CHANNEL_ID }}
           SKIP_CHANNELS: ${{ secrets.SKIP_CHANNELS }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
         run: node index.js
