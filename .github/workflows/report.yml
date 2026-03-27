@@ -1,0 +1,27 @@
+name: Seller Feedback Report
+
+on:
+  schedule:
+    - cron: "0 13 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate and post report
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REPORT_CHANNEL_ID: ${{ secrets.REPORT_CHANNEL_ID }}
+          SKIP_CHANNELS: ${{ secrets.SKIP_CHANNELS }}
+        run: node index.js
