@@ -72,7 +72,7 @@ async function getSellerVolumeData() {
         const totalChange = prev.total ? ((t.total - prev.total) / prev.total * 100).toFixed(1) : "new";
         return { name, count: t.count, total: t.total, prevCount: prev.count, prevTotal: prev.total, countChange, totalChange };
       })
-      .filter((s) => s.name !== "Demo company" && s.name !== "test")
+      .filter((s) => !["Demo company", "test", "Alpine", "None"].includes(s.name))
       .sort((a, b) => b.total - a.total);
 
     // Delinquent / overdue loans
