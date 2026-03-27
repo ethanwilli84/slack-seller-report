@@ -1,15 +1,23 @@
 name: Seller Feedback Report
 
 on:
+  # Every 3 days at 10:30 AM ET (2:30 PM UTC)
   schedule:
-    - cron: "0 13 */3 * *"
+    - cron: "30 14 */3 * *"
+
+  # Manual trigger so you can run it anytime
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   report:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
