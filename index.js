@@ -31,7 +31,19 @@ async function getAllChannels() {
     channels.push(...(res.channels || []));
     cursor = res.response_metadata?.next_cursor;
   } while (cursor);
-  return channels.filter((c) => c.is_member && !SKIP_CHANNELS.has(c.id));
+
+  // Auto-join all public channels the bot isn't in yet
+  const toJoin = channels.filter((c) => !c.is_member && !c.is_private && !SKIP_CHANNELS.has(c.id));
+  for (const ch of toJoin) {
+    try {
+      await slack.conversations.join({ channel: ch.id });
+      console.log(`  ✅ Auto-joined #${ch.name}`);
+    } catch (err) {
+      console.log(`  ⚠️ Couldn't join #${ch.name}: ${err.data?.error || err.message}`);
+    }
+  }
+
+  return channels.filter((c) => !SKIP_CHANNELS.has(c.id));
 }
 async function getMessages(channelId, oldest) {
   const messages = [];
