@@ -33,4 +33,6 @@ jobs:
           REPORT_CHANNEL_ID: ${{ secrets.REPORT_CHANNEL_ID }}
           SKIP_CHANNELS: ${{ secrets.SKIP_CHANNELS }}
           MONGO_URI: ${{ secrets.MONGO_URI }}
+          ALPINE_API_URL: ${{ secrets.ALPINE_API_URL }}
+          ALPINE_API_KEY: ${{ secrets.ALPINE_API_KEY }}
         run: node index.js

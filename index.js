@@ -29,9 +29,23 @@ function daysAgoDate(n) {
 }
 // ── MongoDB: Pull seller volume data ────────────────────────────────────
 async function getSellerVolumeData() {
-  if (!MONGO_URI) {
-    console.log("⚠️ No MONGO_URI set — skipping volume data");
+  if (!MONGO_URI && !process.env.ALPINE_API_URL) {
+    console.log("⚠️ No MONGO_URI or ALPINE_API_URL set — skipping volume data");
     return null;
+  }
+
+  // If ALPINE_API_URL is set, fetch volume data from Alpine's API instead of direct MongoDB
+  if (process.env.ALPINE_API_URL) {
+    try {
+      const res = await fetch(`${process.env.ALPINE_API_URL}/api/internal/seller-volume?days=${LOOKBACK_DAYS}&key=${process.env.ALPINE_API_KEY || ""}`);
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      const data = await res.text();
+      console.log("📊 Volume data pulled from Alpine API");
+      return data;
+    } catch (err) {
+      console.log(`⚠️ Alpine API failed: ${err.message}`);
+      return null;
+    }
   }
 
   const mongo = new MongoClient(MONGO_URI);
