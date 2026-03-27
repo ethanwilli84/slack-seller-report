@@ -254,9 +254,14 @@ async function run() {
     return `\n═══ #${ch.name} ═══\n${msgs}`;
   }).join("\n");
 
-  // Pull MongoDB volume data
+  // Pull MongoDB volume data (non-fatal if it fails)
   console.log("📊 Pulling seller volume from MongoDB...");
-  const volumeData = await getSellerVolumeData();
+  let volumeData = null;
+  try {
+    volumeData = await getSellerVolumeData();
+  } catch (err) {
+    console.log(`⚠️ MongoDB failed (report will still post without volume data): ${err.message}`);
+  }
 
   // Load past reports
   const pastReports = getPastReports(5);
