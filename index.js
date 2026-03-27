@@ -330,14 +330,39 @@ Be direct and aggressive about unresolved issues. If a seller doing $10K+/month 
   saveReport(report);
   gitCommitReport();
 
-  // Post to Slack
+  // Post to Slack as formatted blocks
   console.log("📬 Posting report...");
   const totalMsgs = channelData.reduce((s, c) => s + c.messages.length, 0);
-  const header = `*📋 Alpine Seller Feedback Report — Last ${LOOKBACK_DAYS} Days*\n_${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}_\n_Scanned ${channelData.length} channels, ${totalMsgs} messages${volumeData ? " + MongoDB volume data" : ""}_\n\n`;
+  const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+  // Split report into sections and build Block Kit blocks
+  const blocks = [
+    { type: "header", text: { type: "plain_text", text: "📋 Alpine Seller Feedback Report", emoji: true } },
+    { type: "context", elements: [
+      { type: "mrkdwn", text: `${dateStr}  •  ${channelData.length} channels  •  ${totalMsgs} messages${volumeData ? "  •  MongoDB volume data" : ""}` }
+    ]},
+    { type: "divider" },
+  ];
+
+  // Split the report by section headers (lines starting with *🔥, *💰, *⚠️, *🎯, *📈)
+  const sections = report.split(/(?=\*[🔥💰⚠️🎯📈])/);
+  for (const section of sections) {
+    if (!section.trim()) continue;
+    // Slack blocks have a 3000 char limit per text block
+    const chunks = section.match(/[\s\S]{1,2900}/g) || [section];
+    for (const chunk of chunks) {
+      blocks.push({ type: "section", text: { type: "mrkdwn", text: chunk.trim() } });
+    }
+    blocks.push({ type: "divider" });
+  }
+
+  // Slack has a 50 block limit — trim if needed
+  const finalBlocks = blocks.slice(0, 50);
 
   await slack.chat.postMessage({
     channel: REPORT_CHANNEL,
-    text: header + report,
+    blocks: finalBlocks,
+    text: `Alpine Seller Feedback Report — ${dateStr}`,
     unfurl_links: false,
   });
 
