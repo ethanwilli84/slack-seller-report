@@ -178,12 +178,13 @@ async function getAllChannels() {
   for (const ch of toJoin) {
     try {
       await slack.conversations.join({ channel: ch.id });
+      ch.is_member = true;
       console.log(`  ✅ Auto-joined #${ch.name}`);
     } catch (err) {
       console.log(`  ⚠️ Couldn't join #${ch.name}: ${err.data?.error || err.message}`);
     }
   }
-  return channels.filter((c) => !SKIP_CHANNELS.has(c.id));
+  return channels.filter((c) => c.is_member && !SKIP_CHANNELS.has(c.id));
 }
 
 async function getMessages(channelId, oldest) {
@@ -224,11 +225,15 @@ async function run() {
   const channelData = [];
 
   for (const ch of channels) {
-    const msgs = await getMessages(ch.id, oldest);
-    if (msgs.length === 0) continue;
-    msgs.forEach((m) => m.user && allUserIds.push(m.user));
-    channelData.push({ name: ch.name, id: ch.id, messages: msgs });
-    console.log(`  #${ch.name}: ${msgs.length} messages`);
+    try {
+      const msgs = await getMessages(ch.id, oldest);
+      if (msgs.length === 0) continue;
+      msgs.forEach((m) => m.user && allUserIds.push(m.user));
+      channelData.push({ name: ch.name, id: ch.id, messages: msgs });
+      console.log(`  #${ch.name}: ${msgs.length} messages`);
+    } catch (err) {
+      console.log(`  ⚠️ Skipping #${ch.name}: ${err.data?.error || err.message}`);
+    }
   }
   if (channelData.length === 0) {
     console.log("No messages found in the last 3 days. Skipping report.");
