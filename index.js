@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { WebClient } from "@slack/web-api";
 import { MongoClient } from "mongodb";
+import twilio from "twilio";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -18,6 +19,34 @@ const REPORTS_DIR = path.join(process.cwd(), "reports");
 const SKIP_CHANNELS = new Set(
   (process.env.SKIP_CHANNELS || "").split(",").filter(Boolean)
 );
+
+// ── Twilio SMS ──────────────────────────────────────────────────────────
+const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER;
+const SMS_RECIPIENTS = [
+  "+17346645129",   // Ethan
+  "+18045195038",   // Monte
+  "+21656197468",   // Amine
+];
+
+async function sendSmsNotifications() {
+  if (!TWILIO_SID || !TWILIO_AUTH || !TWILIO_FROM) {
+    console.log("⚠️ Twilio not configured — skipping SMS");
+    return;
+  }
+  const client = twilio(TWILIO_SID, TWILIO_AUTH);
+  const body = `📋 New Alpine seller feedback report ready\nhttps://alpinedept.slack.com/archives/C0APB09MM0D`;
+
+  for (const to of SMS_RECIPIENTS) {
+    try {
+      await client.messages.create({ body, from: TWILIO_FROM, to });
+      console.log(`  📱 SMS sent to ${to}`);
+    } catch (err) {
+      console.log(`  ⚠️ SMS failed for ${to}: ${err.message}`);
+    }
+  }
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 function daysAgo(n) {
@@ -386,6 +415,10 @@ Be direct and aggressive about unresolved issues. If a seller doing $10K+/month 
   });
 
   console.log("✅ Report posted!");
+
+  // Send SMS notifications
+  console.log("📱 Sending SMS notifications...");
+  await sendSmsNotifications();
 }
 
 run().catch((err) => {
