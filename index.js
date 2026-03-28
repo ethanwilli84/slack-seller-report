@@ -378,19 +378,36 @@ Be direct and aggressive about unresolved issues. If a seller doing $10K+/month 
   saveReport(report);
   gitCommitReport();
 
-  // Post to Slack: upload report as file + short summary message
+  // Post to Slack: create a Canvas with the full report, drop a link in the channel
   console.log("📬 Posting report...");
   const totalMsgs = channelData.reduce((s, c) => s + c.messages.length, 0);
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-  const dateShort = new Date().toISOString().split("T")[0];
 
-  // Upload the full report as a formatted snippet (renders nicely in Slack)
-  const upload = await slack.filesUploadV2({
-    channel_id: REPORT_CHANNEL,
-    filename: `alpine-report-${dateShort}.md`,
-    title: `📋 Alpine Seller Feedback Report — ${dateStr}`,
-    content: report,
-    initial_comment: `📋 *Alpine Seller Feedback Report*\n${dateStr}  •  ${channelData.length} channels  •  ${totalMsgs} messages${volumeData ? "  •  MongoDB volume data" : ""}\n\n↑ Open the report above to review.`,
+  // Create Slack Canvas with the report
+  const canvasTitle = `Alpine Seller Feedback Report — ${dateStr}`;
+  const canvasContent = `# Alpine Ops Report - ${dateStr}\n_${channelData.length} channels • ${totalMsgs} messages${volumeData ? " • MongoDB volume data" : ""}_\n\n${report}`;
+
+  const canvas = await slack.apiCall("canvases.create", {
+    title: canvasTitle,
+    document_content: { type: "markdown", markdown: canvasContent },
+  });
+
+  const canvasId = canvas.canvas_id;
+  const canvasUrl = `https://alpinedept.slack.com/canvas/${canvasId}`;
+  console.log(`  📝 Canvas created: ${canvasUrl}`);
+
+  // Share canvas to the channel
+  await slack.apiCall("canvases.access.set", {
+    canvas_id: canvasId,
+    channel_ids: [REPORT_CHANNEL],
+    access_level: "read",
+  });
+
+  // Post a short message with the link
+  await slack.chat.postMessage({
+    channel: REPORT_CHANNEL,
+    text: `📋 *New Alpine Seller Feedback Report*\n${dateStr}  •  ${channelData.length} channels  •  ${totalMsgs} messages\n\n<${canvasUrl}|Open Report>`,
+    unfurl_links: false,
   });
 
   console.log("✅ Report posted!");
