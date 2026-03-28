@@ -378,40 +378,19 @@ Be direct and aggressive about unresolved issues. If a seller doing $10K+/month 
   saveReport(report);
   gitCommitReport();
 
-  // Post to Slack as formatted blocks
+  // Post to Slack: upload report as file + short summary message
   console.log("📬 Posting report...");
   const totalMsgs = channelData.reduce((s, c) => s + c.messages.length, 0);
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const dateShort = new Date().toISOString().split("T")[0];
 
-  // Split report into sections and build Block Kit blocks
-  const blocks = [
-    { type: "header", text: { type: "plain_text", text: "📋 Alpine Seller Feedback Report", emoji: true } },
-    { type: "context", elements: [
-      { type: "mrkdwn", text: `${dateStr}  •  ${channelData.length} channels  •  ${totalMsgs} messages${volumeData ? "  •  MongoDB volume data" : ""}` }
-    ]},
-    { type: "divider" },
-  ];
-
-  // Split the report by section headers (lines starting with *🔥, *💰, *⚠️, *🎯, *📈)
-  const sections = report.split(/(?=\*[🔥💰⚠️🎯📈])/);
-  for (const section of sections) {
-    if (!section.trim()) continue;
-    // Slack blocks have a 3000 char limit per text block
-    const chunks = section.match(/[\s\S]{1,2900}/g) || [section];
-    for (const chunk of chunks) {
-      blocks.push({ type: "section", text: { type: "mrkdwn", text: chunk.trim() } });
-    }
-    blocks.push({ type: "divider" });
-  }
-
-  // Slack has a 50 block limit — trim if needed
-  const finalBlocks = blocks.slice(0, 50);
-
-  await slack.chat.postMessage({
-    channel: REPORT_CHANNEL,
-    blocks: finalBlocks,
-    text: `Alpine Seller Feedback Report — ${dateStr}`,
-    unfurl_links: false,
+  // Upload the full report as a formatted snippet (renders nicely in Slack)
+  const upload = await slack.filesUploadV2({
+    channel_id: REPORT_CHANNEL,
+    filename: `alpine-report-${dateShort}.md`,
+    title: `📋 Alpine Seller Feedback Report — ${dateStr}`,
+    content: report,
+    initial_comment: `📋 *Alpine Seller Feedback Report*\n${dateStr}  •  ${channelData.length} channels  •  ${totalMsgs} messages${volumeData ? "  •  MongoDB volume data" : ""}\n\n↑ Open the report above to review.`,
   });
 
   console.log("✅ Report posted!");
