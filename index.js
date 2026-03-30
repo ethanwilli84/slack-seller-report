@@ -427,7 +427,6 @@ Be direct and aggressive about unresolved issues. If a seller doing $10K+/month 
 
   // Save report for historical context
   saveReport(report);
-  gitCommitReport();
 
   // Generate HTML report and save to docs/ for GitHub Pages
   console.log("📬 Generating HTML report...");
@@ -445,6 +444,9 @@ Be direct and aggressive about unresolved issues. If a seller doing $10K+/month 
   if (!fs.existsSync(docsDir)) fs.mkdirSync(docsDir, { recursive: true });
   fs.writeFileSync(path.join(docsDir, "index.html"), html, "utf-8");
   console.log("  🌐 HTML report saved to docs/index.html");
+
+  // Now push both reports/ and docs/ to GitHub
+  gitCommitReport();
 
   const REPORT_URL = "https://ethanwilli84.github.io/slack-seller-report/";
 
